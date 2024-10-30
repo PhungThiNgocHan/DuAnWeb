@@ -43,6 +43,7 @@ public class ManageProduct extends HttpServlet {
 
         HoaDAO hoaDAO = new HoaDAO();
         LoaiDAO loaiDAO= new LoaiDAO();
+        String method = request.getMethod();
         
         String action = "LIST";
         if (request.getParameter("action") != null) {
@@ -52,11 +53,22 @@ public class ManageProduct extends HttpServlet {
         switch (action) {
             case "LIST":
                 //tra ve giao dien lien ket danh sach san pham quan tri
-                request.setAttribute("dsHoa", hoaDAO.getAll());
+                int pageSize =3;
+                int pageIndex =1;
+                if (request.getParameter("page")!=null)
+                {
+                    pageIndex = Integer.parseInt(request.getParameter("page"));
+                }
+                
+                //Tính tổng số trang có thể có
+                int sumOfPage = (int) Math.ceil((double)hoaDAO.getAll().size()/pageSize);              
+                request.setAttribute("dsHoa", hoaDAO.getByPage(pageIndex, pageSize));
+                request.setAttribute("sumOfPage", sumOfPage); // Chuyển dữ liệu cho JSP (VIEW)
+                request.setAttribute("pageIndex", pageIndex);
                 request.getRequestDispatcher("admin/list_product.jsp").forward(request, response);
                 break;
             case "ADD":
-                String method = request.getMethod();
+                
                 if(method.equals("GET")){
                 //tra ve giao dien lien ket danh sach san pham quan tri
                 request.setAttribute("dsLoai", loaiDAO.getAll());
@@ -88,8 +100,40 @@ public class ManageProduct extends HttpServlet {
                 }
                 break;
             case "EDIT":
-                //tra ve giao dien lien ket danh sach san pham quan tri
-                System.out.println("EDIT");
+                //Tra ve giao dien cap nhat san pham
+                if (method.equalsIgnoreCase("get")) {
+                    int mahoa = Integer.parseInt(request.getParameter("mahoa"));
+                    request.setAttribute("hoa", hoaDAO.getById(mahoa));
+                    request.setAttribute("dsLoai", loaiDAO.getAll());
+                    request.getRequestDispatcher("admin/edit_product.jsp").forward(request, response);
+                } else {
+                    //xu ly cap nhat san pham
+                    //b1 Lay thong tin san pham
+                    int mahoa = Integer.parseInt(request.getParameter("mahoa"));
+                    String tenhoa = request.getParameter("tenhoa");
+                    double gia = Double.parseDouble(request.getParameter("gia"));
+                    Part part = request.getPart("hinh");
+                    int maloai = Integer.parseInt(request.getParameter("maloai"));
+                    String filename = request.getParameter("oldImg");
+
+                    //b2 Xu ly upload file
+                    if (part.getSize() > 0) {
+                        String realpath = request.getServletContext().getRealPath("/assets/images/products");
+                        filename = Paths.get(part.getSubmittedFileName()).getFileName().toString();
+                        part.write(realpath + "/" + filename);
+                    }
+
+                    //3. Cap nhat san pham vao CSDL
+                    Hoa objUpdate = new Hoa(mahoa, tenhoa, gia, filename, maloai, new java.sql.Date(new java.util.Date().getTime()));
+                    if (hoaDAO.Update(objUpdate)) {
+                        //thong bao them thanh cong
+                        request.setAttribute("success", "Thao tac cap nhat san pham thanh cong");
+                    } else {
+                        //thong bao them that bai
+                        request.setAttribute("error", "Thao tac cap nhat san pham that bai");
+                    }
+                    request.getRequestDispatcher("ManagerProduct?action=LIST").forward(request, response);
+                }
                 break;
             case "DELETE":
                 //xử lý xoá sản phẩm

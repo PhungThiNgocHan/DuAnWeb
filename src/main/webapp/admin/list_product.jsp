@@ -49,6 +49,21 @@
             }
         %>        
     </table>
+    <<ul class="pagination justify-content-center">
+        <%
+            //Lấy tổng số trang từ servlet
+            int sumOfPage = (int) request.getAttribute("sumOfPage");
+            int pageIndex = (int) request.getAttribute("pageIndex");
+            for(int i=1; i<=sumOfPage; i++)
+            {
+        %>
+            <li class="page-item <%=pageIndex==i?"active":"" %>"> <a class="page-link" href="ManageProduct?page=<%=i%>"><%=i%></a></li>
+        <%
+            }
+        %>
+        
+    </ul>
+
 </div>
 
 <jsp:include page="../shared/footer.jsp" />
